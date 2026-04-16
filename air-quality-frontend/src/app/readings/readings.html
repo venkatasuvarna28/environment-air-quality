@@ -1,0 +1,247 @@
+<div class="dash-header">
+  <div class="dash-header-inner">
+    <div class="dash-title-block">
+      <div class="dash-icon">🌍</div>
+      <div>
+        <h1>Air Quality Monitoring Dashboard</h1>
+        <p class="dash-subtitle">Real-time pollution tracking across all stations</p>
+      </div>
+    </div>
+    <div class="dash-header-right">
+      <div class="limit-badge">
+        <span class="limit-label">PM2.5 Limit</span>
+        <span class="limit-val">{{ limits.pm25Limit() }} µg/m³</span>
+      </div>
+      <div class="limit-badge">
+        <span class="limit-label">CO₂ Limit</span>
+        <span class="limit-val">{{ limits.co2Limit() }} ppm</span>
+      </div>
+      <a routerLink="/login" class="admin-link">⚙️ Admin</a>
+    </div>
+  </div>
+</div>
+
+<div class="card-container"> 
+
+ 
+<div class="card"> 
+
+    <div class="card-icon">📡</div>
+
+    <h3>Total Stations</h3> 
+
+    <p>{{ totalStations }}</p> 
+
+  </div> 
+
+ 
+<div class="card"> 
+
+    <div class="card-icon">📊</div>
+
+    <h3>Total Readings</h3> 
+
+    <p>{{ accumulatedTotalReadings }}</p> 
+
+  </div> 
+
+ 
+<div class="card unsafe"> 
+
+    <div class="card-icon">⚠️</div>
+
+    <h3>Unsafe</h3> 
+
+    <p>{{ filteredUnsafeCount }}</p> 
+
+  </div> 
+
+ 
+<div class="card safe"> 
+
+    <div class="card-icon">✅</div>
+
+    <h3>Safe</h3> 
+
+    <p>{{ filteredSafeCount }}</p> 
+
+  </div> 
+
+</div> 
+
+ 
+<div class="section-card" id="station-map">
+  <h2>🗺️ Station Map Lite</h2>
+  <p class="worst-hour-subtitle">Real-time air quality status for all monitoring stations</p>
+  <div class="station-map-grid">
+    <div class="station-tile" *ngFor="let s of getStationMapData()" [ngClass]="'tile-' + s.status.toLowerCase()">
+      <div class="station-tile-header">
+        <span class="station-tile-name">{{ s.name }}</span>
+        <span class="station-tile-badge" [ngClass]="'badge-' + s.status.toLowerCase()">
+          <span class="badge-dot"></span>{{ s.status }}
+        </span>
+      </div>
+      <div class="station-tile-location">📍 {{ s.location }}</div>
+      <div class="station-tile-metrics">
+        <div class="metric-item">
+          <span class="metric-label">PM2.5</span>
+          <span class="metric-value" [ngClass]="s.pm25 !== null && s.pm25 > 75 ? 'val-danger' : s.pm25 !== null && s.pm25 > 50 ? 'val-moderate' : 'val-safe'">
+            {{ s.pm25 !== null ? (s.pm25 | number:'1.0-1') : '—' }} <small>µg/m³</small>
+          </span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-label">CO₂</span>
+          <span class="metric-value" [ngClass]="s.co2 !== null && s.co2 > 600 ? 'val-danger' : s.co2 !== null && s.co2 > 500 ? 'val-moderate' : 'val-safe'">
+            {{ s.co2 !== null ? (s.co2 | number:'1.0-1') : '—' }} <small>ppm</small>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-card" *ngIf="readings.length > 0">
+
+  <!-- Header row -->
+  <div class="section-header">
+    <h2>📋 All Readings</h2>
+    <div class="section-filter">
+      <label>City:</label>
+      <select [(ngModel)]="selectedCity">
+        <option value="All">All</option>
+        <option *ngFor="let s of stations" [value]="s.name">{{ s.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Live ticker bar -->
+  <div class="timeline-bar">
+    <div class="timeline-top">
+      <div class="live-indicator">
+        <span class="live-dot" [class.fast]="isFastForward"></span>
+        <span class="timeline-ts">{{ formatDateTime(currentTimestamp) }}</span>
+      </div>
+      <button class="ff-btn" [class.active]="isFastForward" (click)="cycleSpeed()">
+        ⏩ Speed: {{ currentSpeedLabel }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Scrollable accumulated table -->
+  <div class="readings-scroll">
+    <table class="rounded-table">
+      <thead>
+        <tr>
+          <th>City</th>
+          <th>PM2.5 (µg/m³)</th>
+          <th>CO2 (ppm)</th>
+          <th>Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let c of getAccumulatedTableData()">
+          <tr class="ts-divider-row" *ngIf="c.isLatest && revealedUpToIndex > 0">
+            <td colspan="5" class="ts-divider">⬆ Latest — {{ formatDateTime(c.time) }}</td>
+          </tr>
+          <tr [class.slide-in]="c.isLatest" [class.prev-row]="!c.isLatest">
+            <td><b>{{ c.city }}</b></td>
+            <td [style.color]="c.pm25 > 100 ? '#e53935' : '#00897b'"><b>{{ c.pm25 ?? '—' }}</b></td>
+            <td [style.color]="c.co2 > 500 ? '#e53935' : '#00897b'"><b>{{ c.co2 ?? '—' }}</b></td>
+            <td>{{ formatTime(c.time) }}</td>
+            <td>
+              <span [ngClass]="(c.pm25 > 100 || c.co2 > 500) ? 'badge-unsafe' : 'badge-safe'">
+                {{ (c.pm25 > 100 || c.co2 > 500) ? 'UNSAFE' : 'SAFE' }}
+              </span>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="section-card">
+  <h2>📊 Exceed Count per Station</h2>
+  <table class="rounded-table">
+    <thead>
+      <tr>
+        <th>Station</th>
+        <th>PM2.5 Exceeds</th>
+        <th>CO2 Exceeds</th>
+        <th>Total Exceeds</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let d of getExceedByStation()">
+        <td>{{ d.station }}</td>
+        <td [style.color]="d.pm25 > 0 ? '#e74c3c' : '#27ae60'"><b>{{ d.pm25 }}</b></td>
+        <td [style.color]="d.co2 > 0 ? '#e74c3c' : '#27ae60'"><b>{{ d.co2 }}</b></td>
+        <td><b>{{ d.total }}</b></td>
+      </tr>
+    </tbody>
+  </table>
+  <canvas id="exceedChart" style="margin-top:24px;"></canvas>
+</div>
+
+<div class="section-card">
+  <h2>⏱ Worst Hour</h2>
+  <p class="worst-hour-subtitle">The hour with the highest average pollution across all stations</p>
+  <div class="worst-hour-card">
+    <div class="wh-panel wh-hour">
+      <div class="wh-icon">🕐</div>
+      <div class="wh-label">Peak Hour</div>
+      <div class="wh-value">{{ formatWorstHour() }}</div>
+    </div>
+    <div class="wh-panel wh-pollution">
+      <div class="wh-icon">📈</div>
+      <div class="wh-label">Avg Pollution</div>
+      <div class="wh-value">{{ worstHour[1] | number:'1.0-2' }}<span class="wh-unit"> ppm</span></div>
+    </div>
+    <div class="wh-panel wh-city">
+      <div class="wh-icon">📍</div>
+      <div class="wh-label">Worst City</div>
+      <div class="wh-value">{{ getWorstHourCity() }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="section-header">
+    <h2>📈 Pollution Trend Charts</h2>
+    <div class="section-filter">
+      <label>Select City:</label>
+      <select [(ngModel)]="selectedChartCity" (change)="filterChartByCity()">
+        <option value="All">All</option>
+        <option *ngFor="let s of stations" [value]="s.name">{{ s.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <span class="chart-dot" style="background:#3498db"></span>
+        <span class="chart-panel-title">🌫️ PM2.5 — Particulate Matter <small>(µg/m³)</small></span>
+        <span class="chart-live-badge">● LIVE</span>
+      </div>
+      <canvas id="pm25Chart"></canvas>
+    </div>
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <span class="chart-dot" style="background:#27ae60"></span>
+        <span class="chart-panel-title">💨 CO₂ — Carbon Dioxide <small>(ppm)</small></span>
+        <span class="chart-live-badge">● LIVE</span>
+      </div>
+      <canvas id="co2Chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<hr> 
+
+<footer style="text-align:center; margin-top:20px;"> 
+
+</footer> 

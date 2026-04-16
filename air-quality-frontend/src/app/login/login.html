@@ -1,0 +1,33 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">🌍</div>
+    <h2 class="login-title">Air Quality Admin</h2>
+    <p class="login-subtitle">Sign in to manage pollutant limit values</p>
+
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input [(ngModel)]="username" type="text" placeholder="Enter username" (keyup.enter)="login()" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input [(ngModel)]="password" [type]="showPassword ? 'text' : 'password'"
+               placeholder="Enter password" (keyup.enter)="login()" />
+        <span class="toggle-pw" (click)="showPassword = !showPassword">
+          {{ showPassword ? '😶' : '👁️' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="login-error" *ngIf="error">⚠️ {{ error }}</div>
+
+    <button class="login-btn" (click)="login()">Sign In</button>
+
+    <a class="back-link" routerLink="/">← Back to Dashboard</a>
+  </div>
+</div>
