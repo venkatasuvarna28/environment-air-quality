@@ -251,15 +251,36 @@ loadAllData() {
     return this.getStationName(worstId);
   }
 
+  getWorstHourAvgs(): { pm25: number | null; co2: number | null } {
+    const h = this.worstHour[0];
+    if (h == null || !this.readings.length) return { pm25: null, co2: null };
+    const atHour = this.readings.filter(r => new Date(r.timestamp).getHours() === +h);
+    const pm25Rows = atHour.filter(r => r.pollutantId === 1);
+    const co2Rows  = atHour.filter(r => r.pollutantId === 2);
+    const pm25 = pm25Rows.length ? pm25Rows.reduce((s, r) => s + r.value, 0) / pm25Rows.length : null;
+    const co2  = co2Rows.length  ? co2Rows.reduce((s, r) => s + r.value, 0)  / co2Rows.length  : null;
+    return { pm25, co2 };
+  }
+
   getExceedByStation() {
+    const pm25Limit = this.limits.pm25Limit();
+    const co2Limit  = this.limits.co2Limit();
+    const revealedTs = this.revealedUpToIndex >= 0
+      ? new Set(this.allTimestamps.slice(0, this.revealedUpToIndex + 1))
+      : new Set<string>();
+
     const map = new Map<number, { pm25: number; co2: number }>();
-    for (const e of this.exceed) {
-      if (!map.has(e.stationId)) {
-        map.set(e.stationId, { pm25: 0, co2: 0 });
-      }
-      const entry = map.get(e.stationId)!;
-      if (e.pollutantId === 1) entry.pm25++;
-      if (e.pollutantId === 2) entry.co2++;
+    for (const r of this.readings) {
+      if (!revealedTs.has(r.timestamp)) continue;
+      if (this.selectedCity !== 'All' && this.getStationName(r.stationId) !== this.selectedCity) continue;
+      const exceeds =
+        (r.pollutantId === 1 && r.value > pm25Limit) ||
+        (r.pollutantId === 2 && r.value > co2Limit);
+      if (!exceeds) continue;
+      if (!map.has(r.stationId)) map.set(r.stationId, { pm25: 0, co2: 0 });
+      const entry = map.get(r.stationId)!;
+      if (r.pollutantId === 1) entry.pm25++;
+      if (r.pollutantId === 2) entry.co2++;
     }
     return Array.from(map.entries()).map(([stationId, counts]) => ({
       station: this.getStationName(stationId),
@@ -579,6 +600,15 @@ createExceedChart() {
 
 
 
+patchExceedChart() {
+    if (!this.chart2) return;
+    const data = this.getExceedByStation();
+    this.chart2.data.labels = data.map(d => d.station);
+    this.chart2.data.datasets[0].data = data.map(d => d.pm25);
+    this.chart2.data.datasets[1].data = data.map(d => d.co2);
+    this.chart2.update();
+  }
+
 filterByCity() { 
 
   if (this.selectedCity === 'All') { 
@@ -601,8 +631,8 @@ else {
 
       ); 
 
-  } 
-
+  }
+  this.patchExceedChart();
 } 
 
 filterChartByCity() {
@@ -655,6 +685,7 @@ revealNext() {
 updateChartToLatest() {
   if (this.revealedUpToIndex < 0) return;
   this.patchChartData();
+  this.patchExceedChart();
 }
 
 startLiveTimer() {

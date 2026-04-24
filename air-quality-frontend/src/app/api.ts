@@ -60,4 +60,25 @@ export class ApiService {
     );
   }
 
+  getLimits() {
+    return this.http.get<any[]>(this.baseUrl + '/auth/limits');
+  }
+
+  saveLimits(pm25: number, co2: number) {
+    return this.http.put<any>(
+      this.baseUrl + '/auth/limits',
+      [
+        { pollutantId: 1, safeLimit: pm25 },
+        { pollutantId: 2, safeLimit: co2 }
+      ]
+    );
+  }
+
+  login(username: string, password: string) {
+    return this.http.post<{ success: boolean; message: string }>(
+      this.baseUrl + '/auth/login',
+      { username, password }
+    );
+  }
+
 } 

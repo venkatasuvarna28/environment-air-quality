@@ -26,7 +26,9 @@
 
     <div class="login-error" *ngIf="error">⚠️ {{ error }}</div>
 
-    <button class="login-btn" (click)="login()">Sign In</button>
+    <button class="login-btn" (click)="login()" [disabled]="loading">
+      {{ loading ? 'Signing in...' : 'Sign In' }}
+    </button>
 
     <a class="back-link" routerLink="/">← Back to Dashboard</a>
   </div>

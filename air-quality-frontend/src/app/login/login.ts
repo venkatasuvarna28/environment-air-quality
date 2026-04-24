@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../api';
 
 @Component({
   selector: 'app-login',
@@ -15,15 +16,27 @@ export class LoginComponent {
   password = '';
   error = '';
   showPassword = false;
+  loading = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private api: ApiService) {}
 
   login() {
-    if (this.username === 'admin' && this.password === 'admin123') {
-      localStorage.setItem('aq_admin', 'true');
-      this.router.navigate(['/admin']);
-    } else {
-      this.error = 'Invalid username or password.';
-    }
+    this.error = '';
+    this.loading = true;
+    this.api.login(this.username, this.password).subscribe({
+      next: (res) => {
+        this.loading = false;
+        if (res.success) {
+          localStorage.setItem('aq_admin', 'true');
+          this.router.navigate(['/admin']);
+        } else {
+          this.error = res.message;
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.error = 'Invalid username or password.';
+      }
+    });
   }
 }

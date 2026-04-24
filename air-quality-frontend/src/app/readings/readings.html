@@ -198,7 +198,19 @@
     <div class="wh-panel wh-pollution">
       <div class="wh-icon">📈</div>
       <div class="wh-label">Avg Pollution</div>
-      <div class="wh-value">{{ worstHour[1] | number:'1.0-2' }}<span class="wh-unit"> ppm</span></div>
+      <div class="wh-metrics">
+        <div class="wh-metric-row">
+          <span class="wh-metric-name">🌫️ PM2.5</span>
+          <span class="wh-metric-val">{{ getWorstHourAvgs().pm25 !== null ? (getWorstHourAvgs().pm25 | number:'1.0-1') : '—' }}</span>
+          <span class="wh-unit">µg/m³</span>
+        </div>
+        <div class="wh-metric-sep"></div>
+        <div class="wh-metric-row">
+          <span class="wh-metric-name">💨 CO₂</span>
+          <span class="wh-metric-val">{{ getWorstHourAvgs().co2 !== null ? (getWorstHourAvgs().co2 | number:'1.0-1') : '—' }}</span>
+          <span class="wh-unit">ppm</span>
+        </div>
+      </div>
     </div>
     <div class="wh-panel wh-city">
       <div class="wh-icon">📍</div>

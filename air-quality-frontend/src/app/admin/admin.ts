@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { LimitsService } from '../limits.service';
+import { ApiService } from '../api';
 
 @Component({
   selector: 'app-admin',
@@ -18,7 +19,7 @@ export class AdminComponent implements OnInit {
   co2Input: number  = 500;
   saved = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private api: ApiService) {}
 
   ngOnInit() {
     if (!localStorage.getItem('aq_admin')) {
@@ -30,9 +31,14 @@ export class AdminComponent implements OnInit {
   }
 
   save() {
-    this.limits.update(this.pm25Input, this.co2Input);
-    this.saved = true;
-    setTimeout(() => this.saved = false, 3000);
+    this.api.saveLimits(this.pm25Input, this.co2Input).subscribe({
+      next: () => {
+        this.limits.update(this.pm25Input, this.co2Input);
+        this.saved = true;
+        setTimeout(() => this.saved = false, 3000);
+      },
+      error: () => alert('Failed to save limits. Please try again.')
+    });
   }
 
   logout() {
